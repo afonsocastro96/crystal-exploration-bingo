@@ -184,7 +184,7 @@ var bingo = function() {
 
 	if(SEED == "") return reseedPage(MODE, board, LANG);
 
-	$.getJSON("tables"+board+".json", bingoList => {
+	$.getJSON("tables/"+board+".json", bingoList => {
 
 	if (EXPLORATION) {
 		$('#exploration-check').prop('checked',true);

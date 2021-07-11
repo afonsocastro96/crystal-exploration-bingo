@@ -1,3 +1,5 @@
-# Breath of the Wild Bingo
+# Pokémon Crystal Exploration Bingo
 
-Generator for various BotW bingo, full credit goes to the BotW bingo community providing goals
+Generator for Pokémon Crystal Exploration Bingo
+
+Originally developed by lepelog for BotW.

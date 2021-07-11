@@ -176,7 +176,7 @@ function gup( name ) {
 
 var bingo = function() {
 	var size = 5;
-	var board = gup('board') || "normal_v1";
+	var board = gup('board') || "tournament";
 	var LANG = gup('lang') || 'name';
 	var SEED = gup("seed");
 	var MODE = gup("mode");
@@ -184,7 +184,7 @@ var bingo = function() {
 
 	if(SEED == "") return reseedPage(MODE, board, LANG);
 
-	$.getJSON("tables/board.json", bingoList => {
+	$.getJSON("tables"+board+".json", bingoList => {
 
 	if (EXPLORATION) {
 		$('#exploration-check').prop('checked',true);
@@ -204,7 +204,7 @@ var bingo = function() {
 	var qEx = EXPLORATION ? '&exploration=1':'';
 	var qBoard = board ? "&board=" + board:"";
 	var results = $("#results");
-	results.append ('<a href="'+qSeed+qMode+qEx+qBoard+'"><img src="img/en.png" alt="English"></a><a href="'+qSeed+qMode+qEx+qBoard+'&lang=jp"><img src="img/jp.png" alt="Japanese"></a><p>BotW Bingo <strong>v1</strong>&emsp;Seed: <strong>' +
+	results.append ('<p>Seed: <strong>' +
 		SEED + "</strong>&emsp;Card type: <strong>" + cardtype + "</strong>&emsp;Goal list: <strong>" + board + "</strong></p>")
 
 	if (!EXPLORATION) {

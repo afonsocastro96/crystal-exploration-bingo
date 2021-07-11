@@ -1,3 +1,26 @@
+function getLargeBingoBoard(bingoList, size, options = {seed:"", mode:"normal", lang:"name"}) {
+	var SEED = options.seed;
+	var MODE = options.mode;
+
+	Math.seedrandom(SEED); //sets up the RNG
+
+	var unshuffled = [...Array(size*size).keys()];
+
+	var shuffledArray = unshuffled
+  							.map((a) => ({sort: Math.random(), value: a}))
+  							.sort((a, b) => a.sort - b.sort)
+  							.map((a) => a.value)
+
+  	var bingoBoard = [];
+  	for(var i = 1; i <= shuffledArray.length; ++i) {
+  		var difficulty = shuffledArray[i-1]%25;
+  		var RNG = Math.floor(bingoList[difficulty].length * Math.random());
+  		if (RNG == bingoList[difficulty].length) { RNG--; } //fix a miracle (getting exactly 1.0)
+  		bingoBoard[i] = bingoList[difficulty][RNG];
+  	}
+  	return bingoBoard;
+}
+
 function getBingoBoard(bingoList, size, options = {seed:"", mode:"normal", lang:"name"}) {
 
 	var LANG = options.lang;
@@ -100,10 +123,7 @@ function getBingoBoard(bingoList, size, options = {seed:"", mode:"normal", lang:
 		// Table5 controls the 5* part and Table1 controls the 1* part.
 		value = 5*e5 + e1;
 
-		if (MODE == "short") { value = Math.floor(value/2); } // if short mode, limit difficulty
-			else if (MODE == "long") { value = Math.floor((value + 25) / 2); }
-            else if (MODE == "special") { value = Math.floor((value + 25) / 2); }
-			value++;
+		value++;
 		return value;
 	}
 
@@ -181,6 +201,7 @@ var bingo = function() {
 	var SEED = gup("seed");
 	var MODE = gup("mode");
 	var EXPLORATION = gup("exploration");
+	var EDGE = gup("edge");
 
 	if(SEED == "") return reseedPage(MODE, board, LANG);
 
@@ -190,17 +211,38 @@ var bingo = function() {
 		$('#exploration-check').prop('checked',true);
 	}
 
+	if (EDGE)
+		$('#edge-check').prop('checked',true);
+
 	var cardtype = "string";
 
-	if (MODE == "short") { cardtype = "Short"; }
-	else if (MODE == "long") { cardtype = "Long"; }
+	if (MODE == "49") { cardtype = "7X7"; size = 7;}
+	else if (MODE == "100") { cardtype = "10x10"; size = 10;}
 	else { cardtype = "Normal";	}
+
+	switch(size) {
+		case 5:
+			$(".container").css("width", "976px");
+			$(".container").css("margin", "0 auto");
+			$(".bingosync").show();
+			break;
+		case 10:
+			$(".container").css("width", "98%");
+			$(".container").css("margin", "");
+			$(".bingosync").hide();
+			break;
+		case 7:
+			$(".container").css("margin", "");
+			$(".container").css("width", "976px");
+			$(".bingosync").hide();
+			break;
+	}
 
 	Math.seedrandom(SEED); //sets up the RNG
 	var MAX_SEED = 999999; //1 million cards
 
 	var qSeed = "?seed=" + SEED;
-	var qMode = (MODE == "short" || MODE == "long") ? "&mode=" + MODE : "";
+	var qMode = (MODE == "49" || MODE == "100") ? "&mode=" + MODE : "";
 	var qEx = EXPLORATION ? '&exploration=1':'';
 	var qBoard = board ? "&board=" + board:"";
 	var results = $("#results");
@@ -238,16 +280,16 @@ var bingo = function() {
 				var slot = parseInt($(this).attr('id').slice(4));
 				// maybe unhide more goals
 				// dividable by 5? nothing to the right
-				if (slot % 5 != 0) {
+				if (slot % size != 0) {
 					$('#slot'+(slot+1)).removeClass('hidden');
 				}
 				// nothing to the left
-				if (slot % 5 != 1) {
+				if (slot % size != 1) {
 					$('#slot'+(slot-1)).removeClass('hidden');
 				}
 				// top down doesn't matter
-				$('#slot'+(slot+5)).removeClass('hidden');
-				$('#slot'+(slot-5)).removeClass('hidden');
+				$('#slot'+(slot+10)).removeClass('hidden');
+				$('#slot'+(slot-10)).removeClass('hidden');
 			}
 		}
 	);
@@ -267,14 +309,59 @@ var bingo = function() {
 	$("#tlbr").hover(function() { $(".tlbr").addClass("hover"); }, function() {	$(".tlbr").removeClass("hover"); });
 	$("#bltr").hover(function() { $(".bltr").addClass("hover"); }, function() {	$(".bltr").removeClass("hover"); });
 
-	var bingoBoard = getBingoBoard(bingoList, size, {seed: SEED, mode: MODE, lang: LANG});
+	console.log(size);
+
+	var bingoBoard;
+	if(size === 5)
+		bingoBoard = getBingoBoard(bingoList, size, {seed: SEED, mode: MODE, lang: LANG});
+	else
+		bingoBoard = getLargeBingoBoard(bingoList, size, {seed: SEED, mode: MODE, lang: LANG});
+
+	switch(size) {
+		case 10:
+			$('#row8').show();
+			$('#row9').show();
+			$('#row10').show();
+			$('#col8').show();
+			$('#col9').show();
+			$('#col10').show();
+		case 7:
+			$('#row6').show();
+			$('#row7').show();
+			$('#col6').show();
+			$('#col7').show();
+		default:
+			break;
+	}
+
 
 	//populate the actual table on the page
-	for (i=1; i<=25; i++) {
-		$('#slot'+i).append(bingoBoard[i].name);
-		if (EXPLORATION && i != 7 && i != 19) {
-			$('#slot'+i).addClass('hidden');
+	for (i=1; i<=size*size; i++) {
+		var id = (i + (10-size)*Math.floor((i-1)/size));
+		console.log('#slot'+ id)
+		$('#slot'+ id).append(bingoBoard[i].name);
+		$('#slot'+ id).show();
+		if(EXPLORATION) {
+			var edgeMode=document.getElementById('edge-check').checked;
+			
+				
+			if(size == 10) {
+				if(!edgeMode && i != 12 && i != 19 && i != 89 && i != 82)
+					$('#slot'+ (i + (10-size)*Math.floor((i-1)/size))).addClass('hidden');
+				if(edgeMode && i != 1 && i != 100 && i != 10 && i != 91)
+					$('#slot'+ (i + (10-size)*Math.floor((i-1)/size))).addClass('hidden');
+			}
+			else {
+				if(!edgeMode && i != (size+2) && i != (size*(size-1)-1))
+					$('#slot'+ (i + (10-size)*Math.floor((i-1)/size))).addClass('hidden');
+				if(edgeMode && i != 1 && i != size*size)
+					$('#slot'+ (i + (10-size)*Math.floor((i-1)/size))).addClass('hidden');
+			}
+
 		}
+		//if (EXPLORATION && i != 7 && i != 19) {
+		//	$('#slot'+i).addClass('hidden');
+		//}
 	  //$('#slot'+i).append("<br/>" + bingoBoard[i].types.toString());
 	  //$('#slot'+i).append("<br/>" + bingoBoard[i].synergy);
 	}
@@ -294,15 +381,17 @@ var bingo = function() {
 
 function reseedPage(mode) {
 	var qSeed = "?seed=" + Math.ceil(999999 * Math.random());
-	var qMode = (mode == "short" || mode == "long") ? "&mode=" + mode : "";
+	var qMode = (mode == "49" || mode == "100") ? "&mode=" + mode : "";
 	var qEx = $('#exploration-check').is(':checked') ? '&exploration=1':'';
-	var board = gup('board') || "normal_v1";
+	var qEdge = $('#edge-check').is(':checked') ? '&edge=1':'';
+	var board = gup('board') || "tournament";
 	var LANG = gup('lang') || 'name';
 	var qBoard = board ? "&board=" + board:"";
 	var qLang = LANG ? "&lang=" + LANG:"";
-	window.location = qSeed + qMode + qEx + qBoard + qLang;
+	window.location = qSeed + qMode + qEdge + qEx + qBoard + qLang;
 	return false;
 }
 
 // Backwards Compatability
 var srl = { bingo:bingo };
+
